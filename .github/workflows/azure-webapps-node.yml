@@ -28,11 +28,11 @@ jobs:
           spawn lade login
 
           expect {
-              "Username or email:" { send "hwuli0125@gmail.com\r" }
+              "? Username or email:" { send "aitest\r" }
           }
 
           expect {
-              "Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
+              "? Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
           }
 
           expect eof
