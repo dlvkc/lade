@@ -1,0 +1,52 @@
+name: Lade Login Automation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  login-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install expect
+        run: |
+          sudo apt-get install -y expect
+          curl -L https://github.com/lade-io/lade/releases/latest/download/lade-linux-amd64.tar.gz | tar xz
+          sudo mv lade /usr/local/bin
+
+      - name: Automate Lade login
+        run: |
+          # 创建 expect 脚本来自动化登录
+          cat <<EOF > login_expect_script.sh
+          #!/usr/bin/expect -f
+
+          # 设置超时
+          set timeout 20
+
+          # 启动 lade login
+          spawn lade login
+
+          # 交互式输入用户名
+          expect "Username or email:" { send "$env.LADE_USERNAME\r" }
+
+          # 交互式输入密码
+          expect "Password:" { send "$env.LADE_PASSWORD\r" }
+
+          # 等待命令执行完毕
+          expect eof
+          EOF
+
+          # 给脚本增加可执行权限
+          chmod +x login_expect_script.sh
+
+          # 执行 expect 脚本
+          ./login_expect_script.sh
+
+        env:
+          LADE_USERNAME: ${{ secrets.LADE_USERNAME }}  # GitHub Secrets 存储用户名
+          LADE_PASSWORD: ${{ secrets.LADE_PASSWORD }}  # GitHub Secrets 存储密码
