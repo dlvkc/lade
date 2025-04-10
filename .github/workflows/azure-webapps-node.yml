@@ -32,10 +32,10 @@ jobs:
           spawn lade login
 
           # 交互式输入用户名
-          expect "Username or email:" { send "$env.LADE_USERNAME\r" }
+          expect "Username or email:" { send "hwuli0125@gmail.com\r" }
 
           # 交互式输入密码
-          expect "Password:" { send "$env.LADE_PASSWORD\r" }
+          expect "Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
 
           # 等待命令执行完毕
           expect eof
@@ -46,7 +46,3 @@ jobs:
 
           # 执行 expect 脚本
           ./login_expect_script.sh
-
-        env:
-          LADE_USERNAME: ${{ secrets.LADE_USERNAME }}  # GitHub Secrets 存储用户名
-          LADE_PASSWORD: ${{ secrets.LADE_PASSWORD }}  # GitHub Secrets 存储密码
