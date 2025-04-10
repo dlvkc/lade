@@ -16,19 +16,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wget tar
 
-            if [ ! -e ttyd ]; then
+          if [ ! -e ttyd ]; then
                URL=\$(wget -qO- "https://api.github.com/repos/tsl0922/ttyd/releases/latest" | grep -o "https.*x86_64")
                URL=\${URL:-https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64}
                wget -O ttyd \${URL}
                chmod +x ttyd
-            fi
+          fi
 
           ttyd --version
 
       - name: Start ttyd server
         run: |
           # 启动 ttyd，监听 7681 端口，后台运行
-          nohup ttyd -p 7681 bash &
+          nohup ./ttyd -p 7681 bash &
 
       - name: Download and run Cloudflare Tunnel
         run: |
