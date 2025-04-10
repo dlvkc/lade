@@ -29,6 +29,10 @@ jobs:
 
           ./ttyd --version
 
+      - name: Start ttyd server
+        run: |
+          nohup ./ttyd -p 7681 bash > ttyd.log 2>&1 &
+
       - name: Download and run Cloudflare Tunnel
         run: |
           wget -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
@@ -48,6 +52,8 @@ jobs:
               cat argo.log
               exit 1
           fi
-      - name: Start ttyd server
+
+      - name: Keep alive
         run: |
-          ./ttyd -p 7681
+          echo "🏃 保持连接中..."
+          sleep 3600  # 保持 1 小时，可以按需改成更久
