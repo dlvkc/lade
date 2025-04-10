@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install expect
+      - name: Install expect and Lade CLI
         run: |
           sudo apt-get install -y expect
           curl -L https://github.com/lade-io/lade/releases/latest/download/lade-linux-amd64.tar.gz | tar xz
@@ -32,10 +32,16 @@ jobs:
           spawn lade login
 
           # 交互式输入用户名
-          expect "Username or email:" { send "hwuli0125@gmail.com\r" }
+          expect {
+              "Username or email:" { send "hwuli0125@gmail.com\r" }
+              "? Username or email:" { send "hwuli0125@gmail.com\r" }
+          }
 
           # 交互式输入密码
-          expect "Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
+          expect {
+              "Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
+              "? Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
+          }
 
           # 等待命令执行完毕
           expect eof
