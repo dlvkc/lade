@@ -30,16 +30,14 @@ jobs:
       - name: Download and run Cloudflare Tunnel
         run: |
           # 下载 cloudflared
-          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-          chmod +x cloudflared-linux-amd64
-          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+          wget -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 && chmod +x cloudflared
 
           # 启动 cloudflared 隧道，自动随机子域名
-          cloudflared tunnel --url http://localhost:7681 > result.log 2>&1 &
+          ./cloudflared tunnel --edge-ip-version auto --no-autoupdate --logfile argo.log --loglevel info --url http://localhost:7681 2>&1 &
 
           # 等待隧道启动
           sleep 5
 
           # 打印 tunnel 地址
-          cat result.log | grep -o "info.*https://.*trycloudflare.com" | sed "s@.*https://@@g" | tail -n 1
+          cat argo.log | grep -o "info.*https://.*trycloudflare.com" | sed "s@.*https://@@g" | tail -n 1
 
