@@ -1,54 +1,45 @@
-name: Lade Login Automation
+name: Run ttyd with Cloudflare Tunnel
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  login-job:
+  run-ttyd:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install expect and Lade CLI
+      - name: Download and install ttyd
         run: |
-          sudo apt-get install -y expect
-          curl -L https://github.com/lade-io/lade/releases/latest/download/lade-linux-amd64.tar.gz | tar xz
-          sudo mv lade /usr/local/bin
+          sudo apt-get update
+          sudo apt-get install -y wget tar
 
-      - name: Automate Lade login
+          wget https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd_linux.x86_64.tar.gz
+          tar -xvzf ttyd_linux.x86_64.tar.gz
+          sudo mv ttyd /usr/local/bin/
+
+          ttyd --version
+
+      - name: Start ttyd server
         run: |
-          # 创建 expect 脚本来自动化登录
-          cat <<EOF > login_expect_script.sh
-          #!/usr/bin/expect -f
+          # 启动 ttyd，监听 7681 端口，后台运行
+          nohup ttyd -p 7681 bash &
 
-          # 设置超时
-          set timeout 20
+      - name: Download and run Cloudflare Tunnel
+        run: |
+          # 下载 cloudflared
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared-linux-amd64
+          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
 
-          # 启动 lade login
-          spawn lade login
+          # 启动 cloudflared 隧道，自动随机子域名
+          cloudflared tunnel --url http://localhost:7681 > result.log 2>&1 &
 
-          # 交互式输入用户名
-          expect {
-              "Username or email:" { send "hwuli0125@gmail.com\r" }
-              "? Username or email:" { send "hwuli0125@gmail.com\r" }
-          }
+          # 等待隧道启动
+          sleep 5
 
-          # 交互式输入密码
-          expect {
-              "Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
-              "? Password:" { send "GuBD5KdtLqIgDUhv3UUf\r" }
-          }
+          # 打印 tunnel 地址
+          cat result.log | grep -o "info.*https://.*trycloudflare.com" | sed "s@.*https://@@g" | tail -n 1
 
-          # 等待命令执行完毕
-          expect eof
-          EOF
-
-          # 给脚本增加可执行权限
-          chmod +x login_expect_script.sh
-
-          # 执行 expect 脚本
-          ./login_expect_script.sh
