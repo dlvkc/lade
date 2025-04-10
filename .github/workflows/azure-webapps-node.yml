@@ -16,9 +16,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wget tar
 
-          wget https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd_linux.x86_64.tar.gz
-          tar -xvzf ttyd_linux.x86_64.tar.gz
-          sudo mv ttyd /usr/local/bin/
+            if [ ! -e ttyd ]; then
+               URL=\$(wget -qO- "https://api.github.com/repos/tsl0922/ttyd/releases/latest" | grep -o "https.*x86_64")
+               URL=\${URL:-https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64}
+               wget -O ttyd \${URL}
+               chmod +x ttyd
+            fi
 
           ttyd --version
 
