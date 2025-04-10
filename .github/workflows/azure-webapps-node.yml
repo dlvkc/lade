@@ -1,7 +1,9 @@
 name: Run ttyd with Cloudflare Tunnel
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   run-ttyd:
@@ -14,33 +16,39 @@ jobs:
       - name: Download and install ttyd
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget tar
+          sudo apt-get install -y wget tar jq
 
           if [ ! -e ttyd ]; then
-               URL=\$(wget -qO- "https://api.github.com/repos/tsl0922/ttyd/releases/latest" | grep -o "https.*x86_64")
-               URL=\${URL:-https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64}
-               wget -O ttyd \${URL}
+               URL=$(wget -qO- "https://api.github.com/repos/tsl0922/ttyd/releases/latest" | jq -r '.assets[] | select(.name|test("x86_64")) | .browser_download_url')
+               if [ -z "$URL" ]; then
+                   URL=https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64
+               fi
+               wget -O ttyd "$URL"
                chmod +x ttyd
           fi
 
-          ttyd --version
+          ./ttyd --version
 
       - name: Start ttyd server
         run: |
-          # 启动 ttyd，监听 7681 端口，后台运行
-          nohup ./ttyd -p 7681 bash &
+          nohup ./ttyd -p 7681 bash > ttyd.log 2>&1 &
 
       - name: Download and run Cloudflare Tunnel
         run: |
-          # 下载 cloudflared
-          wget -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 && chmod +x cloudflared
+          wget -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
 
-          # 启动 cloudflared 隧道，自动随机子域名
-          ./cloudflared tunnel --edge-ip-version auto --no-autoupdate --logfile argo.log --loglevel info --url http://localhost:7681 2>&1 &
+          nohup ./cloudflared tunnel --edge-ip-version auto --no-autoupdate --logfile argo.log --loglevel info --url http://localhost:7681 > cloudflared.log 2>&1 &
 
-          # 等待隧道启动
-          sleep 5
+          echo "Waiting for Cloudflare Tunnel to start..."
+          sleep 10
 
-          # 打印 tunnel 地址
-          cat argo.log | grep -o "info.*https://.*trycloudflare.com" | sed "s@.*https://@@g" | tail -n 1
-
+          # 获取并输出 Tunnel 地址
+          TUNNEL_URL=$(grep -o 'https://[^ ]*trycloudflare.com' argo.log | head -n 1)
+          if [ -n "$TUNNEL_URL" ]; then
+              echo "✅ 你的远程访问地址: $TUNNEL_URL"
+          else
+              echo "❌ 获取 Tunnel 地址失败，请检查 argo.log 日志。"
+              cat argo.log
+              exit 1
+          fi
